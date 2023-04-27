@@ -1,0 +1,49 @@
+/* Logical device that is modification of null driver */
+
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/fs.h>
+#include <asm/uaccess.h>
+
+ssize_t my_read(struct file *fd, char __user *buf, size_t len, loff_t *off);
+ssize_t my_write(struct file *fd, const char __user *buf, size_t len, loff_t *off);
+
+static struct file_operations fops;
+static int dno = 0;
+static char my_char = 'a';
+
+static int init_test(void)
+{
+	dno = register_chrdev(dno, "Anantvijay", &fops);
+	printk(KERN_ALERT "Hello, Its working\n");
+	fops.read = my_read;
+	fops.write = my_write;
+	return 0;
+}
+
+
+static void  exit_test(void)
+{
+	unregister_chrdev(dno, "Anantvijay");
+	printk(KERN_ALERT "Byeeeeeeeeee\n");
+}
+
+module_init(init_test);
+module_exit(exit_test);
+
+
+ssize_t my_read(struct file *fd, char __user *buf, size_t len, loff_t *off)
+{
+	size_t i;
+	
+	for(i = 0; i < len; i++)
+		copy_to_user(buf + i, &my_char, 1);
+	return len;	
+}
+
+
+ssize_t my_write(struct file *fd, const char __user *buf, size_t len, loff_t *off)
+{
+	copy_from_user(&my_char, buf + len - 1, 1);
+	return len;	//tell the application that everything is written
+}
